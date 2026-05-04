@@ -1,0 +1,233 @@
+---
+title: "Batch-Settlement EVM Scheme"
+description: "High-throughput, low-cost EVM payments via stateless unidirectional payment channels."
+---
+
+The batch-settlement scheme enables high-throughput, low-cost EVM payments via **stateless unidirectional payment channels**. Clients deposit funds into an onchain escrow once, then sign off-chain **cumulative vouchers** per request. Servers verify vouchers with a fast signature check and claim them onchain in batches.
+
+A single claim transaction can cover many channels at once, and claimed funds are swept to the receiver in a separate `settle` step. The scheme also supports **dynamic pricing**: the client authorizes a max per-request amount and the server charges only what was actually used.
+
+<Note>
+  The batch-settlement scheme is currently available in the TypeScript SDK only (`@x402/evm`). Go and Python support is planned.
+</Note>
+
+## How it works
+
+1. **Deposit** — The client opens a channel by depositing funds into an onchain escrow (gasless via EIP-3009 or Permit2, sponsored by the facilitator).
+2. **Voucher** — For each request, the client signs a cumulative off-chain voucher authorizing the total amount spent so far on that channel.
+3. **Verify** — The server verifies the voucher signature locally (no RPC call needed) and serves the response.
+4. **Claim** — The server's `ChannelManager` periodically submits a batch claim transaction covering multiple channels.
+5. **Settle** — Claimed funds are swept to the receiver address in a separate `settle` transaction.
+6. **Refund** — Idle channels can be cooperatively refunded, returning unclaimed balance to the payer.
+
+## Import paths
+
+| Role | Import |
+|------|--------|
+| Client | `@x402/evm/batch-settlement/client` |
+| Server | `@x402/evm/batch-settlement/server` |
+| Facilitator | `@x402/evm/batch-settlement/facilitator` |
+
+## Client usage
+
+Register `BatchSettlementEvmScheme` with an `x402Client`. The client handles deposits, voucher signing, channel-state recovery, and corrective 402 resync automatically.
+
+```typescript
+import { x402Client } from "@x402/core/client";
+import { toClientEvmSigner } from "@x402/evm";
+import { BatchSettlementEvmScheme } from "@x402/evm/batch-settlement/client";
+import { privateKeyToAccount } from "viem/accounts";
+import { createPublicClient, http } from "viem";
+import { baseSepolia } from "viem/chains";
+
+const account = privateKeyToAccount(process.env.EVM_PRIVATE_KEY as `0x${string}`);
+const publicClient = createPublicClient({ chain: baseSepolia, transport: http() });
+const signer = toClientEvmSigner(account, publicClient);
+
+const scheme = new BatchSettlementEvmScheme(signer, {
+  depositPolicy: { depositMultiplier: 5 },
+});
+
+const client = new x402Client();
+client.register("eip155:*", scheme);
+```
+
+### Deposit policy
+
+Controls how much the client deposits when the channel needs funding or top-up:
+
+| Field | Description |
+|-------|-------------|
+| `depositMultiplier` | Per-request `amount × multiplier` is deposited (default 5, minimum 3). |
+
+Use `depositStrategy` for app-specific deposit decisions. The strategy can return `undefined` to use the SDK default, `false` to skip the deposit attempt, or a base-unit string or bigint to choose a custom amount.
+
+```typescript
+const maxDeposit = 1_000_000n;
+
+const scheme = new BatchSettlementEvmScheme(signer, {
+  depositPolicy: { depositMultiplier: 5 },
+  depositStrategy: ({ depositAmount }) => {
+    const amount = BigInt(depositAmount);
+    return amount > maxDeposit ? maxDeposit : undefined;
+  },
+});
+```
+
+### Voucher signer delegation
+
+By default, vouchers are signed by the same key as the payer. For better performance — especially when the payer is a **smart wallet** (EIP-1271) — delegate voucher signing to a dedicated EOA. The scheme commits this address as the channel's `payerAuthorizer`, so the facilitator can verify vouchers via fast ECDSA recovery instead of an onchain `isValidSignature` RPC call.
+
+```typescript
+const voucherSigner = toClientEvmSigner(privateKeyToAccount(process.env.EVM_VOUCHER_SIGNER_PRIVATE_KEY));
+const scheme = new BatchSettlementEvmScheme(signer, { voucherSigner });
+```
+
+### Cooperative refund
+
+Trigger a cooperative refund to return unclaimed channel balance to the payer:
+
+```typescript
+// Full refund: returns the remaining channel balance
+await scheme.refund("https://api.example.com/any-protected-route");
+
+// Partial refund
+await scheme.refund(url, { amount: "1000000" });
+```
+
+The server claims any outstanding vouchers and then executes `refundWithSignature` to return the remaining balance.
+
+### Persistence
+
+By default, channel state is stored in memory. For long-lived clients, use `FileClientChannelStorage`:
+
+```typescript
+import { FileClientChannelStorage } from "@x402/evm/batch-settlement/client";
+
+const scheme = new BatchSettlementEvmScheme(signer, {
+  storage: new FileClientChannelStorage({ directory: "./channels" }),
+});
+```
+
+If state is lost, the client recovers from onchain data plus corrective 402 responses automatically.
+
+## Server usage
+
+Register the scheme with an `x402ResourceServer` and pair it with a `ChannelManager` to handle batched claims, settlements, and refunds.
+
+```typescript
+import { x402ResourceServer } from "@x402/core/server";
+import {
+  BatchSettlementEvmScheme,
+  FileChannelStorage,
+} from "@x402/evm/batch-settlement/server";
+
+const scheme = new BatchSettlementEvmScheme(receiverAddress, {
+  receiverAuthorizerSigner,  // optional: self-managed authorizer (recommended)
+  withdrawDelay: 86400,      // 1 day (in seconds)
+  storage: new FileChannelStorage({ directory: "./channels" }),
+});
+
+const server = new x402ResourceServer(facilitatorClient).register("eip155:84532", scheme);
+
+const manager = scheme.createChannelManager(facilitatorClient, "eip155:84532");
+manager.start({
+  claimIntervalSecs: 60,
+  settleIntervalSecs: 300,
+  refundIntervalSecs: 3600,
+  selectClaimChannels: channels => channels,
+  selectRefundChannels: channels =>
+    channels.filter(channel => Date.now() - channel.lastRequestTimestamp >= 3_600_000),
+});
+```
+
+### Receiver authorizer
+
+Every channel commits to a `receiverAuthorizer` — the address whose EIP-712 signatures authorize `claimWithSignature` and `refundWithSignature`. Choose one of two strategies:
+
+**Self-managed (recommended):** Pass a `receiverAuthorizerSigner` (an EOA you control). Channels survive facilitator changes — any facilitator can relay your signed claims and refunds.
+
+```typescript
+const scheme = new BatchSettlementEvmScheme(receiverAddress, {
+  receiverAuthorizerSigner: privateKeyToAccount(process.env.EVM_RECEIVER_AUTHORIZER_PRIVATE_KEY),
+});
+```
+
+**Facilitator-delegated:** Omit `receiverAuthorizerSigner`. The scheme adopts the address advertised by the facilitator's `/supported` endpoint. Simpler operationally, but switching facilitators requires opening new channels.
+
+### Dynamic pricing
+
+Set the route `price` to the per-request maximum. To bill less than the max, override at handler time using `setSettlementOverrides`:
+
+```typescript
+import { setSettlementOverrides } from "@x402/express";
+
+app.get("/api/generate", (req, res) => {
+  const actualUsage = computeCost();
+  setSettlementOverrides(res, { amount: String(actualUsage) });
+  res.json({ result: "..." });
+});
+```
+
+`amount` accepts raw atomic units, percentages (`"50%"`), or dollar prices (`"$0.001"`).
+
+### Redis storage for serverless deployments
+
+For serverless or multi-instance servers, use `RedisChannelStorage` so channel state survives cold starts and updates atomically across processes:
+
+```typescript
+import { RedisChannelStorage } from "@x402/evm/batch-settlement/server";
+
+const scheme = new BatchSettlementEvmScheme(receiverAddress, {
+  storage: new RedisChannelStorage({ client: redisClient }),
+});
+```
+
+## Facilitator usage
+
+```typescript
+import { x402Facilitator } from "@x402/core/facilitator";
+import { BatchSettlementEvmScheme } from "@x402/evm/batch-settlement/facilitator";
+
+const facilitator = new x402Facilitator().register(
+  "eip155:84532",
+  new BatchSettlementEvmScheme(evmSigner, authorizerSigner),
+);
+```
+
+The `authorizerSigner` produces the EIP-712 signatures advertised in `/supported.kinds[].extra.receiverAuthorizer`. The `evmSigner` submits transactions for `deposit`, `claimWithSignature`, `settle`, and `refundWithSignature`.
+
+## Supported networks
+
+| Network | CAIP-2 ID |
+|---------|-----------|
+| Base Mainnet | `eip155:8453` |
+| Base Sepolia | `eip155:84532` |
+
+## Asset transfer methods
+
+Deposits use one of two onchain transfer methods, controlled by `extra.assetTransferMethod`:
+
+| Method | Description |
+|--------|-------------|
+| `eip3009` | `receiveWithAuthorization` — for tokens that support EIP-3009 (e.g. USDC). Default. |
+| `permit2` | Universal fallback for any ERC-20 via Uniswap Permit2. |
+
+Deposits are sponsored by the facilitator (gasless for the client).
+
+## Settlement policy
+
+Choose claim and settle intervals based on your throughput and gas cost tradeoffs:
+
+- **Claim** frequently enough that channels are claimed before a client's `initiateWithdraw` can finalize (after `withdrawDelay` elapses).
+- **Settle** less frequently when gas savings matter more than cash-flow latency.
+- **Refund** idle channels to return unclaimed balance to payers.
+
+Set `withdrawDelay` greater than your claim cadence plus an operational safety margin. A daily claim job pairs well with a `withdrawDelay` longer than one day.
+
+## Examples
+
+- [Server example](https://github.com/x402-foundation/x402/tree/main/examples/typescript/servers/batch-settlement)
+- [Client example](https://github.com/x402-foundation/x402/tree/main/examples/typescript/clients/batch-settlement)
+- [Facilitator example](https://github.com/x402-foundation/x402/tree/main/examples/typescript/facilitator/batch-settlement)
+- [Next.js + Redis fullstack example](https://github.com/x402-foundation/x402/tree/main/examples/typescript/fullstack/next-batch-settlement-redis)
