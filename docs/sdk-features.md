@@ -41,6 +41,7 @@ This page tracks which features are implemented in each SDK (TypeScript, Go, Pyt
 | exact/evm (EIP-3009) | ✅ | ✅ | ✅ |
 | exact/evm (Permit2) | ✅ | ✅ | ✅ |
 | exact/svm (SPL) | ✅ | ✅ | ✅ |
+| exact/tvm (Jetton) | ❌ | ❌ | ✅ |
 | exact/avm (ASA) | ✅ | ❌ | ❌ |
 | exact/stellar (Soroban) | ✅ | ❌ | ❌ |
 | exact/aptos (Fungible Assets) | ✅ | ❌ | ❌ |
