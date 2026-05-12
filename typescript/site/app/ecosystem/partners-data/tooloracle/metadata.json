@@ -1,0 +1,7 @@
+{
+  "name": "ToolOracle",
+  "category": "Services/Endpoints",
+  "logoUrl": "/logos/tooloracle.png",
+  "description": "EU regulatory compliance APIs for AI agents — 11 paid endpoints on Base mainnet covering MiCA, DORA, AMLR, and sanctions screening. Real-time agent action validation (UVO), stablecoin compliance checks, sanctions screening (87k+ entities), DORA ICT risk, and phantom-citation detection for EU legal texts. Operated by FeedOracle Technologies (Germany 🇩🇪).",
+  "websiteUrl": "https://tooloracle.io/"
+}
