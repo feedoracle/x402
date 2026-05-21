@@ -1,0 +1,6 @@
+{
+  "agent_id": "did:web:agent-7.example.com",
+  "action_type": "sanctions_screen",
+  "scope": "counterparty-due-diligence",
+  "timestamp_ms": 1747728000000
+}

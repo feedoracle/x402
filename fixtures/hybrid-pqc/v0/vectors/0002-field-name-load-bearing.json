@@ -1,0 +1,34 @@
+{
+  "name": "field-name-load-bearing",
+  "spec": "hybrid-pqc-v1-jcs-es256k-mldsa65",
+  "expected_result": "FAIL",
+  "receipt_core": {
+    "receipt_format": "hybrid-pqc",
+    "receipt_version": "0.4",
+    "tool": "sanctions_screen",
+    "server_url": "https://tooloracle.io/aml/mcp",
+    "server_did": "did:web:tooloracle.io",
+    "verdict": "executed",
+    "output_summary": {
+      "result": "clear",
+      "lists_screened": [
+        "EU-FSF",
+        "OFAC-SDN",
+        "UN-SC",
+        "Interpol"
+      ]
+    },
+    "payment_hash": "2ed186ebc66947eaac6a05a88c7bc096ee07ac11a2c44bb5580bd72b3670f580",
+    "action_ref": "10d8a38c01d8672176aa6e5209a368fde3e1831640d69e15283142b35880c2c1",
+    "signature": {
+      "alg": "ES256K",
+      "kid": "feedoracle-mcp-es256k-1",
+      "jwks_url": "https://tooloracle.io/.well-known/jwks.json"
+    },
+    "observed_at_ms": 1747731600000
+  },
+  "expected_jcs_bytes_b64": "eyJhY3Rpb25fcmVmIjoiMTBkOGEzOGMwMWQ4NjcyMTc2YWE2ZTUyMDlhMzY4ZmRlM2UxODMxNjQwZDY5ZTE1MjgzMTQyYjM1ODgwYzJjMSIsIm9ic2VydmVkX2F0X21zIjoxNzQ3NzMxNjAwMDAwLCJvdXRwdXRfc3VtbWFyeSI6eyJsaXN0c19zY3JlZW5lZCI6WyJFVS1GU0YiLCJPRkFDLVNETiIsIlVOLVNDIiwiSW50ZXJwb2wiXSwicmVzdWx0IjoiY2xlYXIifSwicGF5bWVudF9oYXNoIjoiMmVkMTg2ZWJjNjY5NDdlYWFjNmEwNWE4OGM3YmMwOTZlZTA3YWMxMWEyYzQ0YmI1NTgwYmQ3MmIzNjcwZjU4MCIsInJlY2VpcHRfZm9ybWF0IjoiaHlicmlkLXBxYyIsInJlY2VpcHRfdmVyc2lvbiI6IjAuNCIsInNlcnZlcl9kaWQiOiJkaWQ6d2ViOnRvb2xvcmFjbGUuaW8iLCJzZXJ2ZXJfdXJsIjoiaHR0cHM6Ly90b29sb3JhY2xlLmlvL2FtbC9tY3AiLCJzaWduYXR1cmUiOnsiYWxnIjoiRVMyNTZLIiwiandrc191cmwiOiJodHRwczovL3Rvb2xvcmFjbGUuaW8vLndlbGwta25vd24vandrcy5qc29uIiwia2lkIjoiZmVlZG9yYWNsZS1tY3AtZXMyNTZrLTEifSwidG9vbCI6InNhbmN0aW9uc19zY3JlZW4iLCJ2ZXJkaWN0IjoiZXhlY3V0ZWQifQ==",
+  "expected_divergent_digest": "sha256:618accfd7fa9ac582bd0824095040f2c6991814b1e829a8aee55317e6bd15ba2",
+  "must_differ_from": "0001-baseline expected_core_digest (sha256:f9c7b2d8e8324f58bfbd4f48aebe2beb09b7d3f8bfb53be269eaa30562cb0f95)",
+  "notes": "Field-name canonicalisation discipline (cross-axis convention per chopmob-cloud #2398, andysalvo #2398 vector 0009, privacy_class_v0.1 invariant #7). observed_at (RFC3339 string) renamed to observed_at_ms (epoch integer) produces a DIFFERENT digest under JCS \u2014 field names are load-bearing opaque bytes. Pins the actual divergent digest, not just inequality, so a downstream harness catches the wrong-but-deterministic case. MUST differ from 0001."
+}

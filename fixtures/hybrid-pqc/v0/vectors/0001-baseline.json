@@ -1,0 +1,33 @@
+{
+  "name": "baseline-hybrid-pqc",
+  "spec": "hybrid-pqc-v1-jcs-es256k-mldsa65",
+  "expected_result": "PASS",
+  "receipt_core": {
+    "receipt_format": "hybrid-pqc",
+    "receipt_version": "0.4",
+    "tool": "sanctions_screen",
+    "server_url": "https://tooloracle.io/aml/mcp",
+    "server_did": "did:web:tooloracle.io",
+    "observed_at": "2026-05-20T10:00:00.000Z",
+    "verdict": "executed",
+    "output_summary": {
+      "result": "clear",
+      "lists_screened": [
+        "EU-FSF",
+        "OFAC-SDN",
+        "UN-SC",
+        "Interpol"
+      ]
+    },
+    "payment_hash": "2ed186ebc66947eaac6a05a88c7bc096ee07ac11a2c44bb5580bd72b3670f580",
+    "action_ref": "10d8a38c01d8672176aa6e5209a368fde3e1831640d69e15283142b35880c2c1",
+    "signature": {
+      "alg": "ES256K",
+      "kid": "feedoracle-mcp-es256k-1",
+      "jwks_url": "https://tooloracle.io/.well-known/jwks.json"
+    }
+  },
+  "expected_jcs_bytes_b64": "eyJhY3Rpb25fcmVmIjoiMTBkOGEzOGMwMWQ4NjcyMTc2YWE2ZTUyMDlhMzY4ZmRlM2UxODMxNjQwZDY5ZTE1MjgzMTQyYjM1ODgwYzJjMSIsIm9ic2VydmVkX2F0IjoiMjAyNi0wNS0yMFQxMDowMDowMC4wMDBaIiwib3V0cHV0X3N1bW1hcnkiOnsibGlzdHNfc2NyZWVuZWQiOlsiRVUtRlNGIiwiT0ZBQy1TRE4iLCJVTi1TQyIsIkludGVycG9sIl0sInJlc3VsdCI6ImNsZWFyIn0sInBheW1lbnRfaGFzaCI6IjJlZDE4NmViYzY2OTQ3ZWFhYzZhMDVhODhjN2JjMDk2ZWUwN2FjMTFhMmM0NGJiNTU4MGJkNzJiMzY3MGY1ODAiLCJyZWNlaXB0X2Zvcm1hdCI6Imh5YnJpZC1wcWMiLCJyZWNlaXB0X3ZlcnNpb24iOiIwLjQiLCJzZXJ2ZXJfZGlkIjoiZGlkOndlYjp0b29sb3JhY2xlLmlvIiwic2VydmVyX3VybCI6Imh0dHBzOi8vdG9vbG9yYWNsZS5pby9hbWwvbWNwIiwic2lnbmF0dXJlIjp7ImFsZyI6IkVTMjU2SyIsImp3a3NfdXJsIjoiaHR0cHM6Ly90b29sb3JhY2xlLmlvLy53ZWxsLWtub3duL2p3a3MuanNvbiIsImtpZCI6ImZlZWRvcmFjbGUtbWNwLWVzMjU2ay0xIn0sInRvb2wiOiJzYW5jdGlvbnNfc2NyZWVuIiwidmVyZGljdCI6ImV4ZWN1dGVkIn0=",
+  "expected_core_digest": "sha256:f9c7b2d8e8324f58bfbd4f48aebe2beb09b7d3f8bfb53be269eaa30562cb0f95",
+  "notes": "Canonical hybrid-pqc receipt core. Both ES256K and ML-DSA-65 (FIPS 204) sign over THESE canonical bytes (sig values stripped before JCS). expected_core_digest is SHA-256(JCS(receipt_core)) lowercase hex. Verifiers fetch both keys from jwks_url and verify both signatures over the recomputed canonical bytes."
+}

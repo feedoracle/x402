@@ -1,0 +1,31 @@
+{
+  "suite": "hybrid-pqc",
+  "version": "v0",
+  "spec": "hybrid-pqc-v1-jcs-es256k-mldsa65",
+  "axis": "2 - receipt-integrity signature (post-quantum hybrid)",
+  "digest_algorithm": "SHA-256",
+  "canonicalization": "RFC 8785 (JCS)",
+  "signature_algorithms": ["ES256K", "ML-DSA-65"],
+  "ml_dsa_standard": "FIPS 204 (ML-DSA-65, NIST Security Category 3, ~AES-192)",
+  "derivation": "both signatures cover SHA-256(JCS(receipt_core)) with sig values stripped before canonicalisation",
+  "jwks_url": "https://tooloracle.io/.well-known/jwks.json",
+  "keys": {
+    "es256k_kid": "feedoracle-mcp-es256k-1",
+    "mldsa_kid": "feedoracle-mldsa65-1"
+  },
+  "source": "https://gist.github.com/feedoracle/704ab891170e2b43050f6f0ae00e6923",
+  "issue": "https://github.com/x402-foundation/x402/issues/2357",
+  "digest_pinning_convention": "negative vectors pin the actual divergent digest (expected_divergent_digest), not just inequality, per the cross-axis convention on #2398",
+  "vectors": [
+    {"file": "vectors/0001-baseline.json", "expected_result": "PASS"},
+    {"file": "vectors/0002-field-name-load-bearing.json", "expected_result": "FAIL"},
+    {"file": "vectors/0003-hybrid-signature-tamper-evidence.json", "expected_result": "FAIL"},
+    {"file": "vectors/0008-interop-shared-payment-hash.json", "expected_result": "PASS"}
+  ],
+  "artefacts": {
+    "receipt_sample_signed.json": "A complete signed hybrid-pqc receipt (ES256K + ML-DSA-65)",
+    "verify_receipt.py": "Standalone offline verifier (no facilitator callback)",
+    "jwks_snapshot.json": "Pinned key snapshot; verifier also accepts the live JWKS URL",
+    "action_ref_preimage.json": "Work-layer preimage for the action_ref binding check"
+  }
+}
