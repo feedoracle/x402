@@ -35,7 +35,7 @@ One payment, three axes: payment-conditions proof (STARK) / receipt-integrity si
 
 ## Validation
 
-Substrate validation: chopmob-cloud (AlgoVoi) 4-impl JCS reference matrix (rfc8785@0.1.4 / canonicalize@3.0.0 / gowebpki/jcs v1.0.1 / cyberphone/json-canonicalization) -- 4 vectors x 4 implementations = 16/16 byte-for-byte agreements; divergent-digest pin on vector 0002 confirmed across all 4 impls. JWKS rotation check: pinned snapshot SHA-256 `6ecad37c...` byte-equivalent to live `https://tooloracle.io/.well-known/jwks.json` at time of validation.
+Substrate validation: chopmob-cloud (AlgoVoi) 4-impl JCS reference matrix (rfc8785@0.1.4 / canonicalize@3.0.0 / gowebpki/jcs v1.0.1 / cyberphone/json-canonicalization), plus Vauban Pay (seritalien) 5th-impl `serde_jcs 0.2.0` Rust runner cross-validation. Combined 5-implementation byte-for-byte reproduction on 4/4 vectors + 1/1 cross-vector interop bind; divergent-digest pin on vector 0002 confirmed across all implementations. JWKS rotation check: pinned snapshot SHA-256 `6ecad37c...` byte-equivalent to live `https://tooloracle.io/.well-known/jwks.json` at time of validation.
 
 ## Reproducing
 
