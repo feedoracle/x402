@@ -33,6 +33,10 @@ Vector 0008 carries the same `payment_hash` (`2ed186eb…0f580`) and `action_ref
 
 One payment, three axes: payment-conditions proof (STARK) / receipt-integrity signature (this) / work-receipt binding (action_ref). The `action_ref` digest `10d8a38c…` reproduces across Node.js, Python, Rust, and our path with independent JCS implementations and no shared code.
 
+## Validation
+
+Substrate validation: chopmob-cloud (AlgoVoi) 4-impl JCS reference matrix (rfc8785@0.1.4 / canonicalize@3.0.0 / gowebpki/jcs v1.0.1 / cyberphone/json-canonicalization) -- 4 vectors x 4 implementations = 16/16 byte-for-byte agreements; divergent-digest pin on vector 0002 confirmed across all 4 impls. JWKS rotation check: pinned snapshot SHA-256 `6ecad37c...` byte-equivalent to live `https://tooloracle.io/.well-known/jwks.json` at time of validation.
+
 ## Reproducing
 
 ```bash
